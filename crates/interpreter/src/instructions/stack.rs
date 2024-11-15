@@ -25,21 +25,10 @@ pub fn push0<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, _host:
 pub fn push<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     gas!(interpreter, gas::VERYLOW);
 
-    let slice_to_push = {
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        {
-            unsafe { core::slice::from_raw_parts(interpreter.instruction_pointer, N) }
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
-        {
-            &interpreter.bytecode.slice(interpreter.pc..interpreter.pc + N)
-        }
-    };
-
     if let Err(result) = interpreter
         .stack
-        .push_slice(slice_to_push)
+        .push_slice(&interpreter.bytecode.slice(interpreter.pc..interpreter.pc + N)
+)
     {
         interpreter.instruction_result = result;
         return;

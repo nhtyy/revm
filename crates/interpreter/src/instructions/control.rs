@@ -75,12 +75,7 @@ pub fn jumpi<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 fn jump_inner(interpreter: &mut Interpreter, target: U256) {
     let target = as_usize_or_fail!(interpreter, target, InstructionResult::InvalidJump);
 
-    #[cfg(not(feature = "skip_jumpdest_analysis"))]
-    if !interpreter.contract.is_valid_jump(target) {
-        interpreter.instruction_result = InstructionResult::InvalidJump;
-        return;
-    }
-
+    // the next opcode read will panic if this is invalid!
     interpreter.jump_to(target);
 }
 

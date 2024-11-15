@@ -21,13 +21,8 @@ use std::sync::Arc;
 /// EVM bytecode interpreter.
 #[derive(Debug)]
 pub struct Interpreter {
-    #[cfg(feature = "skip_jumpdest_analysis")]
     /// The program counter
     pub pc: usize,
-
-    #[cfg(not(feature = "skip_jumpdest_analysis"))]
-    /// The current instruction pointer.
-    pub instruction_pointer: *const u8,
 
     /// The gas state.
     pub gas: Gas,
@@ -78,68 +73,31 @@ impl Default for Interpreter {
 impl Interpreter {
     /// Adjust the instruction pointer by an offset.
     pub fn offset(&mut self, offset: isize) {
-        // SAFETY: In analysis we append trailing bytes to the bytecode so that this is safe to do
-        // without bounds checking.
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        {
-            self.instruction_pointer = unsafe { self.instruction_pointer.offset(offset) };
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
-        {
-            if offset.is_negative() {
-                self.pc -= offset.abs() as usize;
-            } else {
-                self.pc += offset as usize;
-            }
+        if offset.is_negative() {
+            self.pc -= offset.abs() as usize;
+        } else {
+            self.pc += offset as usize;
         }
     }
 
     /// Add an offset to the instruction pointer.
     /// This is a convenience function for `offset(offset as isize)`.
     pub fn add(&mut self, offset: usize) {
-        // SAFETY: In analysis we append trailing bytes to the bytecode so that this is safe to do
-        // without bounds checking.
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        {
-            self.instruction_pointer = unsafe { self.instruction_pointer.add(offset) };
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
-        {
-            self.pc += offset;
-        }
+        self.pc += offset;
     }
 
     pub fn jump_to(&mut self, pc: usize) {
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        {
-            self.instruction_pointer = unsafe { self.bytecode.as_ptr().add(pc) };
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
-        {
-            self.pc = pc;
-        }
+        self.pc = pc;
     }
 }
 
 impl Interpreter {
     /// Create new interpreter
     pub fn new(contract: Contract, gas_limit: u64, is_static: bool) -> Self {
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        if !contract.bytecode.is_execution_ready() {
-            panic!("Contract is not execution ready {:?}", contract.bytecode);
-        }
-
         let is_eof = contract.bytecode.is_eof();
         let bytecode = contract.bytecode.bytecode().clone();
         Self {
-            #[cfg(feature = "skip_jumpdest_analysis")]
             pc: 0,
-
-            #[cfg(not(feature = "skip_jumpdest_analysis"))]
-            instruction_pointer: bytecode.as_ptr(),
             bytecode,
             contract,
             gas: Gas::new(gas_limit),
@@ -193,18 +151,10 @@ impl Interpreter {
         let Some(code) = eof.body.code(idx) else {
             panic!("Code not found")
         };
+
         self.bytecode = code.clone();
 
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        {
-            self.instruction_pointer = unsafe { self.bytecode.as_ptr().add(pc) };
-        }
-
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
-        {
-            self.pc = pc;
-        }
+        self.pc = pc;
     }
 
     /// Inserts the output of a `create` call into the interpreter.
@@ -380,12 +330,6 @@ impl Interpreter {
     /// Returns the opcode at the current instruction pointer.
     #[inline]
     pub fn current_opcode(&self) -> u8 {
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        unsafe {
-            *self.instruction_pointer
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
         self.bytecode[self.pc]
     }
 
@@ -416,14 +360,6 @@ impl Interpreter {
     /// Returns the current program counter.
     #[inline]
     pub fn program_counter(&self) -> usize {
-        #[cfg(not(feature = "skip_jumpdest_analysis"))]
-        // SAFETY: `instruction_pointer` should be at an offset from the start of the bytecode.
-        // In practice this is always true unless a caller modifies the `instruction_pointer` field manually.
-        unsafe {
-            self.instruction_pointer.offset_from(self.bytecode.as_ptr()) as usize
-        }
-
-        #[cfg(feature = "skip_jumpdest_analysis")]
         self.pc
     }
 
@@ -436,19 +372,7 @@ impl Interpreter {
         FN: Fn(&mut Interpreter, &mut H),
     {
         // Get current opcode.
-        let opcode = {
-            #[cfg(not(feature = "skip_jumpdest_analysis"))]
-            {
-                let opcode = self.current_opcode();
-
-                self.add(1);
-
-                opcode
-            }
-
-            #[cfg(feature = "skip_jumpdest_analysis")]
-            self.bytecode[self.pc]
-        };
+        let opcode = self.bytecode[self.pc];
 
         // execute instruction.
         (instruction_table[opcode as usize])(self, host)
