@@ -92,10 +92,15 @@ impl<'de> Deserialize<'de> for Interpreter {
         }
 
         // SAFETY: range of program_counter checked above
+        #[cfg(not(feature = "skip_jumpdest_analysis"))]
         let instruction_pointer = unsafe { bytecode.as_ptr().add(program_counter) };
 
         Ok(Interpreter {
+            #[cfg(not(feature = "skip_jumpdest_analysis"))]
             instruction_pointer,
+
+            #[cfg(feature = "skip_jumpdest_analysis")]
+            pc: program_counter,
             gas,
             contract,
             instruction_result,
