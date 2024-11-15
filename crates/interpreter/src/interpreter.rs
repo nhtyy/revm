@@ -374,6 +374,9 @@ impl Interpreter {
         // Get current opcode.
         let opcode = self.bytecode[self.pc];
 
+        // Increment program counter.
+        self.pc += 1;
+
         // execute instruction.
         (instruction_table[opcode as usize])(self, host)
     }
