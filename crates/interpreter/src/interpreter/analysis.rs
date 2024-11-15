@@ -36,6 +36,21 @@ pub fn to_analysed(bytecode: Bytecode) -> Bytecode {
     Bytecode::LegacyAnalyzed(LegacyAnalyzedBytecode::new(bytes, len, jump_table))
 }
 
+/// Pad bytecode to ensure we have a stop at the end
+#[inline]
+pub fn to_padded(bytecode: Bytecode) -> Bytecode {
+    match bytecode {
+        Bytecode::LegacyRaw(bytecode) => {
+            let len = bytecode.len();
+            let mut padded_bytecode = Vec::with_capacity(len + 33);
+            padded_bytecode.extend_from_slice(&bytecode);
+            padded_bytecode.resize(len + 33, 0);
+            Bytecode::LegacyRaw(Bytes::from(padded_bytecode))
+        }
+        n => n,
+    }
+}
+
 /// Analyze bytecode to build a jump map.
 fn analyze(code: &[u8]) -> JumpTable {
     let mut jumps: BitVec<u8> = bitvec![u8, Lsb0; 0; code.len()];

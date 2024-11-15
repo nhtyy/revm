@@ -1,6 +1,6 @@
 use revm_primitives::TxKind;
 
-use super::analysis::to_analysed;
+use super::analysis::to_padded;
 use crate::{
     primitives::{Address, Bytecode, Bytes, Env, B256, U256},
     CallInputs,
@@ -40,7 +40,7 @@ impl Contract {
         caller: Address,
         call_value: U256,
     ) -> Self {
-        let bytecode = to_analysed(bytecode);
+        let bytecode = to_padded(bytecode);
 
         Self {
             input,
