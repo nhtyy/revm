@@ -33,7 +33,7 @@ pub fn push<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, _ho
 
         #[cfg(feature = "skip_jumpdest_analysis")]
         {
-            interpreter.bytecode.slice(interpreter.pc, N)
+            &interpreter.bytecode.slice(interpreter.pc..interpreter.pc + N)
         }
     };
 
@@ -65,7 +65,7 @@ pub fn swap<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, _ho
 pub fn dupn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     require_eof!(interpreter);
     gas!(interpreter, gas::VERYLOW);
-    let imm = unsafe { *interpreter.instruction_pointer };
+    let imm = interpreter.current_opcode();
     if let Err(result) = interpreter.stack.dup(imm as usize + 1) {
         interpreter.instruction_result = result;
     }
@@ -76,7 +76,7 @@ pub fn dupn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 pub fn swapn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     require_eof!(interpreter);
     gas!(interpreter, gas::VERYLOW);
-    let imm = unsafe { *interpreter.instruction_pointer };
+    let imm = interpreter.current_opcode();
     if let Err(result) = interpreter.stack.swap(imm as usize + 1) {
         interpreter.instruction_result = result;
     }
@@ -87,7 +87,7 @@ pub fn swapn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 pub fn exchange<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     require_eof!(interpreter);
     gas!(interpreter, gas::VERYLOW);
-    let imm = unsafe { *interpreter.instruction_pointer };
+    let imm = interpreter.current_opcode();
     let n = (imm >> 4) + 1;
     let m = (imm & 0x0F) + 1;
     if let Err(result) = interpreter.stack.exchange(n as usize, m as usize) {

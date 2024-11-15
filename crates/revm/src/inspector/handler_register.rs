@@ -227,7 +227,7 @@ fn inspector_instruction<INSP, DB>(
 {
     // SAFETY: as the PC was already incremented we need to subtract 1 to preserve the
     // old Inspector behavior.
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.sub(1) };
+    interpreter.offset(-1);
 
     // Call step.
     host.external
@@ -238,7 +238,7 @@ fn inspector_instruction<INSP, DB>(
     }
 
     // Reset PC to previous value.
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.add(1) };
+    interpreter.offset(1);
 
     // Execute instruction.
     prev(interpreter, host);

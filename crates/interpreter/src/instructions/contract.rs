@@ -16,132 +16,137 @@ use std::boxed::Box;
 
 /// EOF Create instruction
 pub fn eofcreate<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    require_non_staticcall!(interpreter);
-    gas!(interpreter, EOF_CREATE_GAS);
-    let initcontainer_index = unsafe { *interpreter.instruction_pointer };
-    pop!(interpreter, value, salt, data_offset, data_size);
+    //require_eof!(interpreter);
+    //require_non_staticcall!(interpreter);
+    //gas!(interpreter, EOF_CREATE_GAS);
+    //let initcontainer_index = unsafe { *interpreter.instruction_pointer };
+    //pop!(interpreter, value, salt, data_offset, data_size);
+    //
+    //let sub_container = interpreter
+    //    .eof()
+    //    .expect("EOF is set")
+    //    .body
+    //    .container_section
+    //    .get(initcontainer_index as usize)
+    //    .cloned()
+    //    .expect("EOF is checked");
+    //
+    //// resize memory and get return range.
+    //let Some(input_range) = resize_memory(interpreter, data_offset, data_size) else {
+    //    return;
+    //};
+    //
+    //let input = if !input_range.is_empty() {
+    //    interpreter
+    //        .shared_memory
+    //        .slice_range(input_range)
+    //        .to_vec()
+    //        .into()
+    //} else {
+    //    Bytes::new()
+    //};
+    //
+    //let eof = Eof::decode(sub_container.clone()).expect("Subcontainer is verified");
+    //
+    //if !eof.body.is_data_filled {
+    //    // should be always false as it is verified by eof verification.
+    //    panic!("Panic if data section is not full");
+    //}
+    //
+    //// deduct gas for hash that is needed to calculate address.
+    //gas_or_fail!(
+    //    interpreter,
+    //    cost_per_word(sub_container.len() as u64, KECCAK256WORD)
+    //);
+    //
+    //let created_address = interpreter
+    //    .contract
+    //    .target_address
+    //    .create2(salt.to_be_bytes(), keccak256(sub_container));
+    //
+    //let gas_limit = interpreter.gas().remaining_63_of_64_parts();
+    //gas!(interpreter, gas_limit);
+    //// Send container for execution container is preverified.
+    //interpreter.instruction_result = InstructionResult::CallOrCreate;
+    //interpreter.next_action = InterpreterAction::EOFCreate {
+    //    inputs: Box::new(EOFCreateInputs::new_opcode(
+    //        interpreter.contract.target_address,
+    //        created_address,
+    //        value,
+    //        eof,
+    //        gas_limit,
+    //        input,
+    //    )),
+    //};
+    //
+    //interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
+    
 
-    let sub_container = interpreter
-        .eof()
-        .expect("EOF is set")
-        .body
-        .container_section
-        .get(initcontainer_index as usize)
-        .cloned()
-        .expect("EOF is checked");
-
-    // resize memory and get return range.
-    let Some(input_range) = resize_memory(interpreter, data_offset, data_size) else {
-        return;
-    };
-
-    let input = if !input_range.is_empty() {
-        interpreter
-            .shared_memory
-            .slice_range(input_range)
-            .to_vec()
-            .into()
-    } else {
-        Bytes::new()
-    };
-
-    let eof = Eof::decode(sub_container.clone()).expect("Subcontainer is verified");
-
-    if !eof.body.is_data_filled {
-        // should be always false as it is verified by eof verification.
-        panic!("Panic if data section is not full");
-    }
-
-    // deduct gas for hash that is needed to calculate address.
-    gas_or_fail!(
-        interpreter,
-        cost_per_word(sub_container.len() as u64, KECCAK256WORD)
-    );
-
-    let created_address = interpreter
-        .contract
-        .target_address
-        .create2(salt.to_be_bytes(), keccak256(sub_container));
-
-    let gas_limit = interpreter.gas().remaining_63_of_64_parts();
-    gas!(interpreter, gas_limit);
-    // Send container for execution container is preverified.
-    interpreter.instruction_result = InstructionResult::CallOrCreate;
-    interpreter.next_action = InterpreterAction::EOFCreate {
-        inputs: Box::new(EOFCreateInputs::new_opcode(
-            interpreter.contract.target_address,
-            created_address,
-            value,
-            eof,
-            gas_limit,
-            input,
-        )),
-    };
-
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
+    todo!()
 }
 
 pub fn return_contract<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_init_eof!(interpreter);
-    let deploy_container_index = unsafe { *interpreter.instruction_pointer };
-    pop!(interpreter, aux_data_offset, aux_data_size);
-    let aux_data_size = as_usize_or_fail!(interpreter, aux_data_size);
-    // important: offset must be ignored if len is zeros
-    let container = interpreter
-        .eof()
-        .expect("EOF is set")
-        .body
-        .container_section
-        .get(deploy_container_index as usize)
-        .expect("EOF is checked")
-        .clone();
-
-    // convert to EOF so we can check data section size.
-    let (eof_header, _) = EofHeader::decode(&container).expect("valid EOF header");
-
-    let aux_slice = if aux_data_size != 0 {
-        let aux_data_offset = as_usize_or_fail!(interpreter, aux_data_offset);
-        resize_memory!(interpreter, aux_data_offset, aux_data_size);
-
-        interpreter
-            .shared_memory
-            .slice(aux_data_offset, aux_data_size)
-    } else {
-        &[]
-    };
-
-    let static_aux_size = eof_header.eof_size() - container.len();
-
-    // data_size - static_aux_size give us current data `container` size.
-    // and with aux_slice len we can calculate new data size.
-    let new_data_size = eof_header.data_size as usize - static_aux_size + aux_slice.len();
-    if new_data_size > 0xFFFF {
-        // aux data is too big
-        interpreter.instruction_result = InstructionResult::EofAuxDataOverflow;
-        return;
-    }
-    if new_data_size < eof_header.data_size as usize {
-        // aux data is too small
-        interpreter.instruction_result = InstructionResult::EofAuxDataTooSmall;
-        return;
-    }
-    let new_data_size = (new_data_size as u16).to_be_bytes();
-
-    let mut output = [&container, aux_slice].concat();
-    // set new data size in eof bytes as we know exact index.
-    output[eof_header.data_size_raw_i()..][..2].clone_from_slice(&new_data_size);
-    let output: Bytes = output.into();
-
-    let result = InstructionResult::ReturnContract;
-    interpreter.instruction_result = result;
-    interpreter.next_action = crate::InterpreterAction::Return {
-        result: InterpreterResult {
-            output,
-            gas: interpreter.gas,
-            result,
-        },
-    };
+    //require_init_eof!(interpreter);
+    //let deploy_container_index = unsafe { *interpreter.instruction_pointer };
+    //pop!(interpreter, aux_data_offset, aux_data_size);
+    //let aux_data_size = as_usize_or_fail!(interpreter, aux_data_size);
+    //// important: offset must be ignored if len is zeros
+    //let container = interpreter
+    //    .eof()
+    //    .expect("EOF is set")
+    //    .body
+    //    .container_section
+    //    .get(deploy_container_index as usize)
+    //    .expect("EOF is checked")
+    //    .clone();
+    //
+    //// convert to EOF so we can check data section size.
+    //let (eof_header, _) = EofHeader::decode(&container).expect("valid EOF header");
+    //
+    //let aux_slice = if aux_data_size != 0 {
+    //    let aux_data_offset = as_usize_or_fail!(interpreter, aux_data_offset);
+    //    resize_memory!(interpreter, aux_data_offset, aux_data_size);
+    //
+    //    interpreter
+    //        .shared_memory
+    //        .slice(aux_data_offset, aux_data_size)
+    //} else {
+    //    &[]
+    //};
+    //
+    //let static_aux_size = eof_header.eof_size() - container.len();
+    //
+    //// data_size - static_aux_size give us current data `container` size.
+    //// and with aux_slice len we can calculate new data size.
+    //let new_data_size = eof_header.data_size as usize - static_aux_size + aux_slice.len();
+    //if new_data_size > 0xFFFF {
+    //    // aux data is too big
+    //    interpreter.instruction_result = InstructionResult::EofAuxDataOverflow;
+    //    return;
+    //}
+    //if new_data_size < eof_header.data_size as usize {
+    //    // aux data is too small
+    //    interpreter.instruction_result = InstructionResult::EofAuxDataTooSmall;
+    //    return;
+    //}
+    //let new_data_size = (new_data_size as u16).to_be_bytes();
+    //
+    //let mut output = [&container, aux_slice].concat();
+    //// set new data size in eof bytes as we know exact index.
+    //output[eof_header.data_size_raw_i()..][..2].clone_from_slice(&new_data_size);
+    //let output: Bytes = output.into();
+    //
+    //let result = InstructionResult::ReturnContract;
+    //interpreter.instruction_result = result;
+    //interpreter.next_action = crate::InterpreterAction::Return {
+    //    result: InterpreterResult {
+    //        output,
+    //        gas: interpreter.gas,
+    //        result,
+    //    },
+    //};
+    
+    todo!()
 }
 
 pub fn extcall_input(interpreter: &mut Interpreter) -> Option<Bytes> {

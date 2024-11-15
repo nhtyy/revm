@@ -87,7 +87,11 @@ impl Interpreter {
 
         #[cfg(feature = "skip_jumpdest_analysis")]
         {
-            self.pc = (self.pc as isize + offset) as usize;
+            if offset.is_negative() {
+                self.pc -= offset.abs() as usize;
+            } else {
+                self.pc += offset as usize;
+            }
         }
     }
 
@@ -104,6 +108,18 @@ impl Interpreter {
         #[cfg(feature = "skip_jumpdest_analysis")]
         {
             self.pc += offset;
+        }
+    }
+
+    pub fn jump_to(&mut self, pc: usize) {
+        #[cfg(not(feature = "skip_jumpdest_analysis"))]
+        {
+            self.instruction_pointer = unsafe { self.bytecode.as_ptr().add(pc) };
+        }
+
+        #[cfg(feature = "skip_jumpdest_analysis")]
+        {
+            self.pc = pc;
         }
     }
 }
@@ -425,10 +441,7 @@ impl Interpreter {
             {
                 let opcode = self.current_opcode();
 
-                // SAFETY: In analysis we are doing padding of bytecode so that we are sure that last
-                // byte instruction is STOP so we are safe to just increment program_counter bcs on last instruction
-                // it will do noop and just stop execution of this contract
-                self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
+                self.add(1);
 
                 opcode
             }

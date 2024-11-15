@@ -6,51 +6,55 @@ use crate::{
 };
 
 pub fn rjump<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::BASE);
-    let offset = unsafe { read_i16(interpreter.instruction_pointer) } as isize;
-    // In spec it is +3 but pointer is already incremented in
-    // `Interpreter::step` so for revm is +2.
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset + 2) };
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::BASE);
+    //let offset = unsafe { read_i16(interpreter.instruction_pointer) } as isize;
+    //// In spec it is +3 but pointer is already incremented in
+    //// `Interpreter::step` so for revm is +2.
+    //interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset + 2) };
+    
+    todo!()
 }
 
 pub fn rjumpi<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::CONDITION_JUMP_GAS);
-    pop!(interpreter, condition);
-    // In spec it is +3 but pointer is already incremented in
-    // `Interpreter::step` so for revm is +2.
-    let mut offset = 2;
-    if !condition.is_zero() {
-        offset += unsafe { read_i16(interpreter.instruction_pointer) } as isize;
-    }
-
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset) };
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::CONDITION_JUMP_GAS);
+    //pop!(interpreter, condition);
+    //// In spec it is +3 but pointer is already incremented in
+    //// `Interpreter::step` so for revm is +2.
+    //let mut offset = 2;
+    //if !condition.is_zero() {
+    //    offset += unsafe { read_i16(interpreter.instruction_pointer) } as isize;
+    //}
+    //
+    //interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset) };
+    todo!()
 }
 
 pub fn rjumpv<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::CONDITION_JUMP_GAS);
-    pop!(interpreter, case);
-    let case = as_isize_saturated!(case);
-
-    let max_index = unsafe { *interpreter.instruction_pointer } as isize;
-    // for number of items we are adding 1 to max_index, multiply by 2 as each offset is 2 bytes
-    // and add 1 for max_index itself. Note that revm already incremented the instruction pointer
-    let mut offset = (max_index + 1) * 2 + 1;
-
-    if case <= max_index {
-        offset += unsafe {
-            read_i16(
-                interpreter
-                    .instruction_pointer
-                    // offset for max_index that is one byte
-                    .offset(1 + case * 2),
-            )
-        } as isize;
-    }
-
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset) };
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::CONDITION_JUMP_GAS);
+    //pop!(interpreter, case);
+    //let case = as_isize_saturated!(case);
+    //
+    //let max_index = unsafe { *interpreter.instruction_pointer } as isize;
+    //// for number of items we are adding 1 to max_index, multiply by 2 as each offset is 2 bytes
+    //// and add 1 for max_index itself. Note that revm already incremented the instruction pointer
+    //let mut offset = (max_index + 1) * 2 + 1;
+    //
+    //if case <= max_index {
+    //    offset += unsafe {
+    //        read_i16(
+    //            interpreter
+    //                .instruction_pointer
+    //                // offset for max_index that is one byte
+    //                .offset(1 + case * 2),
+    //        )
+    //    } as isize;
+    //}
+    //
+    //interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(offset) };
+    todo!()
 }
 
 pub fn jump<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -74,8 +78,8 @@ fn jump_inner(interpreter: &mut Interpreter, target: U256) {
         interpreter.instruction_result = InstructionResult::InvalidJump;
         return;
     }
-    // SAFETY: `is_valid_jump` ensures that `dest` is in bounds.
-    interpreter.instruction_pointer = unsafe { interpreter.bytecode.as_ptr().add(target) };
+
+    interpreter.jump_to(target);
 }
 
 pub fn jumpdest_or_nop<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -83,68 +87,74 @@ pub fn jumpdest_or_nop<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &
 }
 
 pub fn callf<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::LOW);
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::LOW);
+    //
+    //let idx = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
+    //
+    //if interpreter.function_stack.return_stack_len() >= 1024 {
+    //    interpreter.instruction_result = InstructionResult::EOFFunctionStackOverflow;
+    //    return;
+    //}
+    //
+    //// get target types
+    //let Some(types) = interpreter.eof().unwrap().body.types_section.get(idx) else {
+    //    panic!("Invalid EOF in execution, expecting correct intermediate in callf")
+    //};
+    //
+    //// Check max stack height for target code section.
+    //// safe to subtract as max_stack_height is always more than inputs.
+    //if interpreter.stack.len() + (types.max_stack_size - types.inputs as u16) as usize > 1024 {
+    //    interpreter.instruction_result = InstructionResult::StackOverflow;
+    //    return;
+    //}
+    //
+    //// push current idx and PC to the callf stack.
+    //// PC is incremented by 2 to point to the next instruction after callf.
+    //interpreter
+    //    .function_stack
+    //    .push(interpreter.program_counter() + 2, idx);
+    //
+    //interpreter.load_eof_code(idx, 0)
 
-    let idx = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
-
-    if interpreter.function_stack.return_stack_len() >= 1024 {
-        interpreter.instruction_result = InstructionResult::EOFFunctionStackOverflow;
-        return;
-    }
-
-    // get target types
-    let Some(types) = interpreter.eof().unwrap().body.types_section.get(idx) else {
-        panic!("Invalid EOF in execution, expecting correct intermediate in callf")
-    };
-
-    // Check max stack height for target code section.
-    // safe to subtract as max_stack_height is always more than inputs.
-    if interpreter.stack.len() + (types.max_stack_size - types.inputs as u16) as usize > 1024 {
-        interpreter.instruction_result = InstructionResult::StackOverflow;
-        return;
-    }
-
-    // push current idx and PC to the callf stack.
-    // PC is incremented by 2 to point to the next instruction after callf.
-    interpreter
-        .function_stack
-        .push(interpreter.program_counter() + 2, idx);
-
-    interpreter.load_eof_code(idx, 0)
+    todo!()
 }
 
 pub fn retf<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::RETF_GAS);
-
-    let Some(fframe) = interpreter.function_stack.pop() else {
-        panic!("Expected function frame")
-    };
-
-    interpreter.load_eof_code(fframe.idx, fframe.pc);
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::RETF_GAS);
+    //
+    //let Some(fframe) = interpreter.function_stack.pop() else {
+    //    panic!("Expected function frame")
+    //};
+    //
+    //interpreter.load_eof_code(fframe.idx, fframe.pc);
+    
+    todo!()
 }
 
 pub fn jumpf<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, gas::LOW);
-
-    let idx = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
-
-    // get target types
-    let Some(types) = interpreter.eof().unwrap().body.types_section.get(idx) else {
-        panic!("Invalid EOF in execution, expecting correct intermediate in jumpf")
-    };
-
-    // Check max stack height for target code section.
-    // safe to subtract as max_stack_height is always more than inputs.
-    if interpreter.stack.len() + (types.max_stack_size - types.inputs as u16) as usize > 1024 {
-        interpreter.instruction_result = InstructionResult::StackOverflow;
-        return;
-    }
-
-    interpreter.function_stack.set_current_code_idx(idx);
-    interpreter.load_eof_code(idx, 0)
+    //require_eof!(interpreter);
+    //gas!(interpreter, gas::LOW);
+    //
+    //let idx = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
+    //
+    //// get target types
+    //let Some(types) = interpreter.eof().unwrap().body.types_section.get(idx) else {
+    //    panic!("Invalid EOF in execution, expecting correct intermediate in jumpf")
+    //};
+    //
+    //// Check max stack height for target code section.
+    //// safe to subtract as max_stack_height is always more than inputs.
+    //if interpreter.stack.len() + (types.max_stack_size - types.inputs as u16) as usize > 1024 {
+    //    interpreter.instruction_result = InstructionResult::StackOverflow;
+    //    return;
+    //}
+    //
+    //interpreter.function_stack.set_current_code_idx(idx);
+    //interpreter.load_eof_code(idx, 0)
+    
+    todo!()
 }
 
 pub fn pc<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {

@@ -27,24 +27,26 @@ pub fn data_load<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H)
 }
 
 pub fn data_loadn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, VERYLOW);
-    let offset = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
-
-    let slice = interpreter
-        .contract
-        .bytecode
-        .eof()
-        .expect("eof")
-        .data_slice(offset, 32);
-
-    let mut word = [0u8; 32];
-    word[..slice.len()].copy_from_slice(slice);
-
-    push_b256!(interpreter, word.into());
-
-    // add +2 to the instruction pointer to skip the offset
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(2) };
+    //require_eof!(interpreter);
+    //gas!(interpreter, VERYLOW);
+    //let offset = unsafe { read_u16(interpreter.instruction_pointer) } as usize;
+    //
+    //let slice = interpreter
+    //    .contract
+    //    .bytecode
+    //    .eof()
+    //    .expect("eof")
+    //    .data_slice(offset, 32);
+    //
+    //let mut word = [0u8; 32];
+    //word[..slice.len()].copy_from_slice(slice);
+    //
+    //push_b256!(interpreter, word.into());
+    //
+    //// add +2 to the instruction pointer to skip the offset
+    //interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(2) };
+    
+    todo!()
 }
 
 pub fn data_size<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
