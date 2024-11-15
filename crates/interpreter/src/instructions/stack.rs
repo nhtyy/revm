@@ -24,17 +24,28 @@ pub fn push0<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, _host:
 
 pub fn push<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     gas!(interpreter, gas::VERYLOW);
-    // SAFETY: In analysis we append trailing bytes to the bytecode so that this is safe to do
-    // without bounds checking.
-    let ip = interpreter.instruction_pointer;
+
+    let slice_to_push = {
+        #[cfg(not(feature = "skip_jumpdest_analysis"))]
+        {
+            unsafe { core::slice::from_raw_parts(interpreter.instruction_pointer, N) }
+        }
+
+        #[cfg(feature = "skip_jumpdest_analysis")]
+        {
+            interpreter.bytecode.slice(interpreter.pc, N)
+        }
+    };
+
     if let Err(result) = interpreter
         .stack
-        .push_slice(unsafe { core::slice::from_raw_parts(ip, N) })
+        .push_slice(slice_to_push)
     {
         interpreter.instruction_result = result;
         return;
     }
-    interpreter.instruction_pointer = unsafe { ip.add(N) };
+   
+    interpreter.add(N);
 }
 
 pub fn dup<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -58,7 +69,8 @@ pub fn dupn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     if let Err(result) = interpreter.stack.dup(imm as usize + 1) {
         interpreter.instruction_result = result;
     }
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
+    
+    interpreter.add(1);
 }
 
 pub fn swapn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -68,7 +80,8 @@ pub fn swapn<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     if let Err(result) = interpreter.stack.swap(imm as usize + 1) {
         interpreter.instruction_result = result;
     }
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
+
+    interpreter.add(1);
 }
 
 pub fn exchange<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -81,7 +94,7 @@ pub fn exchange<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) 
         interpreter.instruction_result = result;
     }
 
-    interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
+    interpreter.add(1);
 }
 
 #[cfg(test)]

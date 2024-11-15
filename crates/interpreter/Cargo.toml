@@ -60,6 +60,9 @@ negate-optimism-default-handler = [
     "revm-primitives/negate-optimism-default-handler",
 ]
 
+# Useful for ZKVMs
+skip_jumpdest_analysis = []
+
 dev = [
     "memory_limit",
     "optional_balance_check",

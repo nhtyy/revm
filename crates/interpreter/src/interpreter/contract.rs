@@ -40,6 +40,7 @@ impl Contract {
         caller: Address,
         call_value: U256,
     ) -> Self {
+        #[cfg(not(feature = "skip_jumpdest_analysis"))]
         let bytecode = to_analysed(bytecode);
 
         Self {
