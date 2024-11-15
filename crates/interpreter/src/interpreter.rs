@@ -74,7 +74,7 @@ impl Interpreter {
     /// Adjust the instruction pointer by an offset.
     pub fn offset(&mut self, offset: isize) {
         if offset.is_negative() {
-            self.pc -= offset.abs() as usize;
+            self.pc -= offset.unsigned_abs();
         } else {
             self.pc += offset as usize;
         }
@@ -85,7 +85,8 @@ impl Interpreter {
     pub fn add(&mut self, offset: usize) {
         self.pc += offset;
     }
-
+    
+    /// Set the program counter arbitrarily.
     pub fn jump_to(&mut self, pc: usize) {
         self.pc = pc;
     }

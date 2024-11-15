@@ -75,6 +75,8 @@ pub fn jumpi<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 fn jump_inner(interpreter: &mut Interpreter, target: U256) {
     let target = as_usize_or_fail!(interpreter, target, InstructionResult::InvalidJump);
 
+    assert!(interpreter.bytecode[target] == crate::opcode::JUMPDEST, "Invalid jump destination");
+
     // the next opcode read will panic if this is invalid!
     interpreter.jump_to(target);
 }
