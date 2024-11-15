@@ -128,6 +128,16 @@ impl Bytecode {
 
         Bytecode::LegacyAnalyzed(bytecode.into_analyzed())
     }
+    
+    /// Pad the bytecode, but skip any analysis
+    #[inline]
+    pub fn into_padded(self) -> Bytecode {
+        let Bytecode::LegacyRaw(bytecode) = self else {
+            panic!("Expected LegacyRaw bytecode");
+        };
+
+        Bytecode::LegacyRaw(bytecode.into_padded())
+    }
 
     /// Create new checked bytecode.
     ///

@@ -68,10 +68,10 @@ pub fn jumpi<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 #[inline]
 fn jump_inner(interpreter: &mut Interpreter, target: U256) {
     let target = as_usize_or_fail!(interpreter, target, InstructionResult::InvalidJump);
-    if !interpreter.contract.is_valid_jump(target) {
-        interpreter.instruction_result = InstructionResult::InvalidJump;
-        return;
-    }
+
+    assert!(target < interpreter.bytecode.len(), "Jump target OOB");
+    assert!(interpreter.bytecode[target] == bytecode::opcode::JUMPDEST, "Invalid jump target");
+
     // SAFETY: `is_valid_jump` ensures that `dest` is in bounds.
     interpreter.instruction_pointer = unsafe { interpreter.bytecode.as_ptr().add(target) };
 }

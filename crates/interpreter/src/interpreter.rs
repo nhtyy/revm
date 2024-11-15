@@ -71,9 +71,6 @@ impl Default for Interpreter {
 impl Interpreter {
     /// Create new interpreter
     pub fn new(contract: Contract, gas_limit: u64, is_static: bool) -> Self {
-        if !contract.bytecode.is_execution_ready() {
-            panic!("Contract is not execution ready {:?}", contract.bytecode);
-        }
         let is_eof = contract.bytecode.is_eof();
         let bytecode = contract.bytecode.bytecode().clone();
         Self {

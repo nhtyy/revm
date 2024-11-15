@@ -37,7 +37,7 @@ impl Contract {
         caller: Address,
         call_value: U256,
     ) -> Self {
-        let bytecode = bytecode.into_analyzed();
+        let bytecode = bytecode.into_padded();
 
         Self {
             input,

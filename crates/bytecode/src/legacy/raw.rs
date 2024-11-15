@@ -22,6 +22,14 @@ impl LegacyRawBytecode {
         padded_bytecode.resize(len + 33, 0);
         LegacyAnalyzedBytecode::new(padded_bytecode.into(), len, jump_table)
     }
+
+    pub fn into_padded(self) -> LegacyRawBytecode {
+        let len = self.0.len();
+        let mut padded_bytecode = Vec::with_capacity(len + 33);
+        padded_bytecode.extend_from_slice(&self.0);
+        padded_bytecode.resize(len + 33, 0);
+        LegacyRawBytecode(padded_bytecode.into())
+    }
 }
 
 impl From<Bytes> for LegacyRawBytecode {
