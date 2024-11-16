@@ -2,6 +2,7 @@ pub mod eof;
 pub mod legacy;
 
 pub use eof::{Eof, EOF_MAGIC, EOF_MAGIC_BYTES, EOF_MAGIC_HASH};
+use legacy::LegacyRawPaddedBytecode;
 pub use legacy::{JumpTable, LegacyAnalyzedBytecode};
 
 use crate::{
@@ -19,6 +20,8 @@ use std::{fmt, sync::Arc};
 pub enum Bytecode {
     /// No analysis has been performed.
     LegacyRaw(Bytes),
+    /// No analysis has been performed but its been padded
+    LegacyRawPadded(LegacyRawPaddedBytecode),
     /// The bytecode has been analyzed for valid jump destinations.
     LegacyAnalyzed(LegacyAnalyzedBytecode),
     /// Ethereum Object Format
@@ -152,6 +155,7 @@ impl Bytecode {
                 .code(0)
                 .expect("Valid EOF has at least one code section"),
             Self::Eip7702(code) => code.raw(),
+            Self::LegacyRawPadded(padded) => padded.bytecode(),
         }
     }
 
@@ -186,6 +190,7 @@ impl Bytecode {
             Self::LegacyAnalyzed(analyzed) => analyzed.original_bytes(),
             Self::Eof(eof) => eof.raw().clone(),
             Self::Eip7702(eip7702) => eip7702.raw().clone(),
+            Self::LegacyRawPadded(padded) => padded.original_bytes()
         }
     }
 
@@ -197,6 +202,7 @@ impl Bytecode {
             Self::LegacyAnalyzed(analyzed) => analyzed.original_byte_slice(),
             Self::Eof(eof) => eof.raw(),
             Self::Eip7702(eip7702) => eip7702.raw(),
+            Self::LegacyRawPadded(padded) => padded.original_byte_slice()
         }
     }
 

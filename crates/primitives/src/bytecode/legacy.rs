@@ -66,3 +66,34 @@ impl LegacyAnalyzedBytecode {
         &self.jump_table
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LegacyRawPaddedBytecode {
+    bytes: Bytes,
+    original_len: usize,
+}
+
+impl LegacyRawPaddedBytecode {
+    pub fn new(bytes: Bytes, original_len: usize) -> Self {
+        Self { bytes, original_len }
+    }
+
+    pub fn bytecode(&self) -> &Bytes {
+        &self.bytes
+    }
+
+    pub fn original_len(&self) -> usize {
+        self.original_len
+    }
+
+    pub fn original_bytes(&self) -> Bytes {
+        self.bytes.slice(..self.original_len)
+    }
+
+    pub fn original_byte_slice(&self) -> &[u8] {
+        &self.bytes[..self.original_len]
+    }
+}
+
+

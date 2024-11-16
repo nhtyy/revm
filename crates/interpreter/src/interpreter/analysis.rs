@@ -1,4 +1,4 @@
-use revm_primitives::MAX_INITCODE_SIZE;
+use revm_primitives::{legacy::LegacyRawPaddedBytecode, MAX_INITCODE_SIZE};
 
 use crate::{
     instructions::utility::{read_i16, read_u16},
@@ -45,7 +45,11 @@ pub fn to_padded(bytecode: Bytecode) -> Bytecode {
             let mut padded_bytecode = Vec::with_capacity(len + 33);
             padded_bytecode.extend_from_slice(&bytecode);
             padded_bytecode.resize(len + 33, 0);
-            Bytecode::LegacyRaw(Bytes::from(padded_bytecode))
+
+            Bytecode::LegacyRawPadded(LegacyRawPaddedBytecode::new(
+                Bytes::from(padded_bytecode),
+                len,
+            ))
         }
         n => n,
     }
